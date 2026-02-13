@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Higher Positive Impact Slider</title>
+  <style>
+    :root {
+      --bg: #f7f9fc;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --good: #0f766e;
+      --border: #dbe3ef;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      padding: 24px;
+    }
+
+    .card {
+      max-width: 860px;
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      margin: 0 0 8px;
+    }
+
+    .subtitle {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .scenario {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 18px;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .action-box {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .action-label {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #0f172a;
+    }
+
+    .slider-wrap {
+      margin: 18px 0 6px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .scale {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
+
+    #selectionText {
+      font-weight: 700;
+      margin: 12px 0;
+    }
+
+    #feedback {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 10px;
+      display: none;
+      border: 1px solid #b7e4dd;
+      background: #ecfdf5;
+      color: var(--good);
+      font-size: 0.95rem;
+    }
+
+    .controls {
+      margin-top: 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    #checkBtn {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    #resetBtn {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    @media (max-width: 700px) {
+      .actions { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Read the scenario. Drag the slider to decide which action has the Higher Positive Impact.</h1>
+    <p class="subtitle">Move the slider toward Action A or Action B, then click <strong>Check</strong>.</p>
+
+    <section class="scenario">
+      <strong>Scenario:</strong>
+      <p>A team misses a deadline because project risks were not surfaced early enough.</p>
+    </section>
+
+    <section class="actions">
+      <article class="action-box">
+        <div class="action-label">Action A</div>
+        <div>Privately document what went wrong and wait for leadership to ask for updates.</div>
+      </article>
+
+      <article class="action-box">
+        <div class="action-label">Action B</div>
+        <div>Schedule a brief retrospective, identify root causes, and publish a risk-check process for future projects.</div>
+      </article>
+    </section>
+
+    <div class="slider-wrap">
+      <input id="impactSlider" type="range" min="0" max="100" value="50" step="1" aria-label="Impact comparison slider" />
+      <div class="scale">
+        <span>Action A has higher positive impact</span>
+        <span>Action B has higher positive impact</span>
+      </div>
+    </div>
+
+    <p id="selectionText">Current choice: Neutral</p>
+
+    <div class="controls">
+      <button id="checkBtn" type="button">Check</button>
+      <button id="resetBtn" type="button">Reset</button>
+    </div>
+
+    <div id="feedback" role="status" aria-live="polite"></div>
+  </main>
+
+  <script>
+    const slider = document.getElementById('impactSlider');
+    const selectionText = document.getElementById('selectionText');
+    const feedback = document.getElementById('feedback');
+    const checkBtn = document.getElementById('checkBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // Adjust threshold if you want Action A to be the "best" answer.
+    const correctDirection = 'B';
+
+    function updateSelectionText() {
+      const val = Number(slider.value);
+      if (val <= 40) {
+        selectionText.textContent = 'Current choice: Leaning toward Action A';
+      } else if (val >= 60) {
+        selectionText.textContent = 'Current choice: Leaning toward Action B';
+      } else {
+        selectionText.textContent = 'Current choice: Neutral';
+      }
+    }
+
+    function getLeanDirection() {
+      const val = Number(slider.value);
+      if (val <= 40) return 'A';
+      if (val >= 60) return 'B';
+      return 'N';
+    }
+
+    checkBtn.addEventListener('click', () => {
+      const lean = getLeanDirection();
+      feedback.style.display = 'block';
+
+      if (lean === 'N') {
+        feedback.textContent = 'Move the slider more clearly toward one action before checking.';
+        return;
+      }
+
+      if (lean === correctDirection) {
+        feedback.textContent = 'Great choice. Building a repeatable risk-check process creates broader positive impact.';
+      } else {
+        feedback.textContent = 'Consider which action improves long-term outcomes for the whole team and future projects.';
+      }
+    });
+
+    slider.addEventListener('input', updateSelectionText);
+
+    resetBtn.addEventListener('click', () => {
+      slider.value = 50;
+      updateSelectionText();
+      feedback.style.display = 'none';
+      feedback.textContent = '';
+    });
+
+    updateSelectionText();
+  </script>
+</body>
+</html>
