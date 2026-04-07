@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RISE 360 Quiz Block</title>
+<style>
+  /* ── Reset & Base ─────────────────────────────────── */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #1a73e8;
+    --primary-hover: #1557b0;
+    --success: #0d8043;
+    --fail: #c5221f;
+    --bg: #ffffff;
+    --card-bg: #f8f9fa;
+    --border: #dadce0;
+    --text: #202124;
+    --text-light: #5f6368;
+    --correct-bg: #e6f4ea;
+    --incorrect-bg: #fce8e6;
+    --font: 'Segoe UI', Roboto, Arial, sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.5;
+  }
+
+  .quiz-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px 16px;
+  }
+
+  /* ── Header ───────────────────────────────────────── */
+  .quiz-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .quiz-header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .quiz-header p {
+    color: var(--text-light);
+    font-size: 0.95rem;
+  }
+
+  /* ── Progress Bar ─────────────────────────────────── */
+  .progress-bar-wrap {
+    background: var(--border);
+    border-radius: 8px;
+    height: 8px;
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--primary);
+    border-radius: 8px;
+    transition: width 0.4s ease;
+  }
+
+  /* ── Question Card ────────────────────────────────── */
+  .question-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .question-card.correct  { border-color: var(--success); background: var(--correct-bg); }
+  .question-card.incorrect { border-color: var(--fail); background: var(--incorrect-bg); }
+
+  .question-number {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 6px;
+  }
+  .question-text {
+    font-size: 1.05rem;
+    font-weight: 500;
+    margin-bottom: 16px;
+  }
+
+  /* ── Answer Options ───────────────────────────────── */
+  .options-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .option-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    font-family: var(--font);
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .option-btn:hover:not(.locked) {
+    border-color: var(--primary);
+    background: #e8f0fe;
+  }
+  .option-btn.selected {
+    border-color: var(--primary);
+    background: #e8f0fe;
+    font-weight: 500;
+  }
+  .option-btn.locked { cursor: default; }
+  .option-btn.chosen-correct  { border-color: var(--success); background: var(--correct-bg); }
+  .option-btn.chosen-wrong    { border-color: var(--fail);    background: var(--incorrect-bg); }
+  .option-btn.reveal-correct  { border-color: var(--success); background: var(--correct-bg); }
+
+  .option-letter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--border);
+    font-weight: 600;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  .feedback-text {
+    margin-top: 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: none;
+  }
+  .feedback-text.show { display: block; }
+  .feedback-text.correct-fb  { color: var(--success); }
+  .feedback-text.incorrect-fb { color: var(--fail); }
+
+  /* ── Navigation ───────────────────────────────────── */
+  .nav-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 12px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 22px;
+    font-size: 0.95rem;
+    font-family: var(--font);
+    font-weight: 500;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-secondary {
+    background: transparent;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+  }
+  .btn-secondary:hover { background: #e8f0fe; }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* ── Results Screen ───────────────────────────────── */
+  #results-screen { display: none; }
+  #results-screen.show { display: block; }
+
+  .results-card {
+    text-align: center;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px 24px;
+    margin-bottom: 24px;
+  }
+
+  .score-circle {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    border: 6px solid var(--border);
+  }
+  .score-circle.pass { border-color: var(--success); }
+  .score-circle.fail { border-color: var(--fail); }
+
+  .score-percent {
+    font-size: 2.2rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .score-circle.pass .score-percent { color: var(--success); }
+  .score-circle.fail .score-percent { color: var(--fail); }
+
+  .score-label {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    margin-top: 2px;
+  }
+
+  .pass-fail-badge {
+    display: inline-block;
+    padding: 6px 24px;
+    border-radius: 20px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .pass-fail-badge.pass { background: var(--correct-bg); color: var(--success); }
+  .pass-fail-badge.fail { background: var(--incorrect-bg); color: var(--fail); }
+
+  .results-summary {
+    font-size: 0.95rem;
+    color: var(--text-light);
+    margin-bottom: 24px;
+  }
+
+  .results-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Question Screen (hide/show) ──────────────────── */
+  #question-screen.hidden { display: none; }
+
+  /* ── Responsive ───────────────────────────────────── */
+  @media (max-width: 480px) {
+    .quiz-container { padding: 16px 10px; }
+    .question-card  { padding: 16px; }
+    .results-card   { padding: 28px 16px; }
+    .btn { padding: 10px 14px; font-size: 0.9rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="quiz-container">
+
+  <!-- ── Header ──────────────────────────────────── -->
+  <div class="quiz-header">
+    <h1 id="quiz-title">Knowledge Check</h1>
+    <p id="quiz-subtitle">Answer all questions, then view your results.</p>
+  </div>
+
+  <!-- ── Progress ────────────────────────────────── -->
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progress-fill"></div>
+  </div>
+
+  <!-- ── Question Screen ─────────────────────────── -->
+  <div id="question-screen">
+    <div class="question-card" id="question-card">
+      <div class="question-number" id="q-number"></div>
+      <div class="question-text"  id="q-text"></div>
+      <ul class="options-list"    id="q-options"></ul>
+      <div class="feedback-text"  id="q-feedback"></div>
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-secondary" id="btn-prev" disabled>&#8592; Previous</button>
+      <button class="btn btn-primary"   id="btn-next" disabled>Next &#8594;</button>
+    </div>
+  </div>
+
+  <!-- ── Results Screen ──────────────────────────── -->
+  <div id="results-screen">
+    <div class="results-card">
+      <div class="score-circle" id="score-circle">
+        <span class="score-percent" id="score-percent">0%</span>
+        <span class="score-label">Score</span>
+      </div>
+      <div class="pass-fail-badge" id="pass-fail-badge"></div>
+      <p class="results-summary" id="results-summary"></p>
+    </div>
+    <div class="results-actions">
+      <button class="btn btn-secondary" id="btn-review">Review Answers</button>
+      <button class="btn btn-primary"   id="btn-email">Email Results</button>
+      <button class="btn btn-secondary" id="btn-retry">Retake Quiz</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ================================================================
+   CONFIGURATION — edit this section to customise your quiz
+   ================================================================ */
+
+const QUIZ_CONFIG = {
+  title: "Course Knowledge Check",
+  subtitle: "Answer each question, then submit to see your results.",
+  passPercent: 80,                       // pass mark (%)
+  emailRecipient: "trainer@example.com", // default recipient
+  emailSubject: "Quiz Results",          // email subject line
+  showFeedback: true,                    // show correct/incorrect after each answer
+};
+
+/*
+  QUESTIONS ARRAY
+  ───────────────
+  Add, remove or edit questions below.
+  - "question"       : the question text
+  - "options"        : array of answer strings
+  - "correctIndex"   : zero-based index of the correct option
+  - "feedback"       : (optional) explanation shown after answering
+*/
+const QUESTIONS = [
+  {
+    question: "What is the primary purpose of a risk assessment?",
+    options: [
+      "To eliminate all risks entirely",
+      "To identify hazards and evaluate the level of risk",
+      "To assign blame for accidents",
+      "To replace health and safety training"
+    ],
+    correctIndex: 1,
+    feedback: "A risk assessment identifies hazards and evaluates risk so controls can be put in place."
+  },
+  {
+    question: "Which of the following is an example of a 'control measure'?",
+    options: [
+      "Ignoring the hazard",
+      "Providing personal protective equipment (PPE)",
+      "Increasing exposure time",
+      "Removing warning signs"
+    ],
+    correctIndex: 1,
+    feedback: "PPE is a common control measure used to reduce exposure to hazards."
+  },
+  {
+    question: "What does the acronym PPE stand for?",
+    options: [
+      "Personal Protective Equipment",
+      "Private Protection Enforcement",
+      "Proactive Prevention Evaluation",
+      "Public Policy Engagement"
+    ],
+    correctIndex: 0,
+    feedback: "PPE stands for Personal Protective Equipment."
+  },
+  {
+    question: "Who is responsible for health and safety in the workplace?",
+    options: [
+      "Only the employer",
+      "Only the employees",
+      "Both the employer and employees",
+      "The local council"
+    ],
+    correctIndex: 2,
+    feedback: "Health and safety is a shared responsibility between employers and employees."
+  },
+  {
+    question: "When should an incident be reported?",
+    options: [
+      "Only if someone is seriously injured",
+      "Only during business hours",
+      "As soon as possible after it occurs",
+      "At the end of the working week"
+    ],
+    correctIndex: 2,
+    feedback: "Incidents should be reported as soon as possible so they can be investigated promptly."
+  }
+];
+
+/* ================================================================
+   QUIZ ENGINE — no edits needed below this line
+   ================================================================ */
+
+let currentIndex = 0;
+let answers = new Array(QUESTIONS.length).fill(null); // selected index per question
+
+// DOM refs
+const titleEl       = document.getElementById("quiz-title");
+const subtitleEl    = document.getElementById("quiz-subtitle");
+const progressFill  = document.getElementById("progress-fill");
+const qScreen       = document.getElementById("question-screen");
+const rScreen       = document.getElementById("results-screen");
+const qCard         = document.getElementById("question-card");
+const qNumber       = document.getElementById("q-number");
+const qText         = document.getElementById("q-text");
+const qOptions      = document.getElementById("q-options");
+const qFeedback     = document.getElementById("q-feedback");
+const btnPrev       = document.getElementById("btn-prev");
+const btnNext       = document.getElementById("btn-next");
+const scoreCircle   = document.getElementById("score-circle");
+const scorePercent  = document.getElementById("score-percent");
+const passBadge     = document.getElementById("pass-fail-badge");
+const resultsSummary= document.getElementById("results-summary");
+const btnReview     = document.getElementById("btn-review");
+const btnEmail      = document.getElementById("btn-email");
+const btnRetry      = document.getElementById("btn-retry");
+
+// ── Initialise ──────────────────────────────────────
+function init() {
+  titleEl.textContent    = QUIZ_CONFIG.title;
+  subtitleEl.textContent = QUIZ_CONFIG.subtitle;
+  renderQuestion();
+  btnPrev.addEventListener("click", goPrev);
+  btnNext.addEventListener("click", goNext);
+  btnReview.addEventListener("click", reviewAnswers);
+  btnEmail.addEventListener("click", emailResults);
+  btnRetry.addEventListener("click", retakeQuiz);
+}
+
+// ── Render current question ─────────────────────────
+function renderQuestion() {
+  const q = QUESTIONS[currentIndex];
+  const answered = answers[currentIndex] !== null;
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  // Progress
+  progressFill.style.width = ((currentIndex + 1) / QUESTIONS.length * 100) + "%";
+
+  // Header
+  qNumber.textContent = `Question ${currentIndex + 1} of ${QUESTIONS.length}`;
+  qText.textContent   = q.question;
+
+  // Reset card state
+  qCard.className = "question-card";
+
+  // Options
+  qOptions.innerHTML = "";
+  q.options.forEach((opt, i) => {
+    const li  = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.className = "option-btn";
+    btn.innerHTML = `<span class="option-letter">${letters[i]}</span><span>${opt}</span>`;
+
+    if (answered && QUIZ_CONFIG.showFeedback) {
+      btn.classList.add("locked");
+      if (i === answers[currentIndex] && i === q.correctIndex) {
+        btn.classList.add("chosen-correct");
+      } else if (i === answers[currentIndex] && i !== q.correctIndex) {
+        btn.classList.add("chosen-wrong");
+      } else if (i === q.correctIndex) {
+        btn.classList.add("reveal-correct");
+      }
+    } else if (answered) {
+      btn.classList.add("locked");
+      if (i === answers[currentIndex]) btn.classList.add("selected");
+    } else {
+      btn.addEventListener("click", () => selectAnswer(i));
+    }
+
+    li.appendChild(btn);
+    qOptions.appendChild(li);
+  });
+
+  // Feedback
+  qFeedback.className = "feedback-text";
+  qFeedback.textContent = "";
+  if (answered && QUIZ_CONFIG.showFeedback) {
+    const isCorrect = answers[currentIndex] === q.correctIndex;
+    qCard.classList.add(isCorrect ? "correct" : "incorrect");
+    qFeedback.classList.add("show", isCorrect ? "correct-fb" : "incorrect-fb");
+    qFeedback.textContent = isCorrect
+      ? (q.feedback ? `Correct! ${q.feedback}` : "Correct!")
+      : (q.feedback ? `Incorrect. ${q.feedback}` : `Incorrect. The correct answer was: ${q.options[q.correctIndex]}`);
+  }
+
+  // Navigation buttons
+  btnPrev.disabled = currentIndex === 0;
+  updateNextButton();
+}
+
+function updateNextButton() {
+  const isLast   = currentIndex === QUESTIONS.length - 1;
+  const answered = answers[currentIndex] !== null;
+
+  btnNext.disabled = !answered;
+  btnNext.innerHTML = isLast ? "Submit Quiz" : "Next &#8594;";
+}
+
+// ── Answer selection ────────────────────────────────
+function selectAnswer(index) {
+  answers[currentIndex] = index;
+  renderQuestion();
+}
+
+// ── Navigation ──────────────────────────────────────
+function goPrev() {
+  if (currentIndex > 0) { currentIndex--; renderQuestion(); }
+}
+
+function goNext() {
+  if (currentIndex < QUESTIONS.length - 1) {
+    currentIndex++;
+    renderQuestion();
+  } else {
+    showResults();
+  }
+}
+
+// ── Results ─────────────────────────────────────────
+function calcScore() {
+  let correct = 0;
+  QUESTIONS.forEach((q, i) => { if (answers[i] === q.correctIndex) correct++; });
+  return { correct, total: QUESTIONS.length, percent: Math.round((correct / QUESTIONS.length) * 100) };
+}
+
+function showResults() {
+  const { correct, total, percent } = calcScore();
+  const passed = percent >= QUIZ_CONFIG.passPercent;
+
+  qScreen.classList.add("hidden");
+  rScreen.classList.add("show");
+  progressFill.style.width = "100%";
+
+  scorePercent.textContent = percent + "%";
+  scoreCircle.className    = "score-circle " + (passed ? "pass" : "fail");
+
+  passBadge.textContent = passed ? "PASS" : "FAIL";
+  passBadge.className   = "pass-fail-badge " + (passed ? "pass" : "fail");
+
+  resultsSummary.textContent =
+    `You scored ${correct} out of ${total} (${percent}%). ` +
+    (passed
+      ? `You met the ${QUIZ_CONFIG.passPercent}% pass mark. Well done!`
+      : `The pass mark is ${QUIZ_CONFIG.passPercent}%. Please review the material and try again.`);
+}
+
+// ── Review Answers ──────────────────────────────────
+function reviewAnswers() {
+  rScreen.classList.remove("show");
+  qScreen.classList.remove("hidden");
+  currentIndex = 0;
+  renderQuestion();
+}
+
+// ── Email Results ───────────────────────────────────
+function emailResults() {
+  const { correct, total, percent } = calcScore();
+  const passed  = percent >= QUIZ_CONFIG.passPercent;
+  const status  = passed ? "PASS" : "FAIL";
+  const now     = new Date();
+  const dateStr = now.toLocaleDateString() + " " + now.toLocaleTimeString();
+
+  let body = `Quiz Results — ${QUIZ_CONFIG.title}\n`;
+  body += `Date: ${dateStr}\n`;
+  body += `Score: ${correct} / ${total} (${percent}%)\n`;
+  body += `Status: ${status}\n`;
+  body += `Pass Mark: ${QUIZ_CONFIG.passPercent}%\n\n`;
+  body += `--- Question Breakdown ---\n\n`;
+
+  QUESTIONS.forEach((q, i) => {
+    const selected  = answers[i];
+    const isCorrect = selected === q.correctIndex;
+    body += `Q${i + 1}: ${q.question}\n`;
+    body += `   Your answer: ${selected !== null ? q.options[selected] : "No answer"}\n`;
+    body += `   Correct answer: ${q.options[q.correctIndex]}\n`;
+    body += `   Result: ${isCorrect ? "Correct" : "Incorrect"}\n\n`;
+  });
+
+  const mailto = `mailto:${encodeURIComponent(QUIZ_CONFIG.emailRecipient)}`
+    + `?subject=${encodeURIComponent(QUIZ_CONFIG.emailSubject + " — " + status + " (" + percent + "%)")}`
+    + `&body=${encodeURIComponent(body)}`;
+
+  window.open(mailto, "_blank");
+}
+
+// ── Retake Quiz ─────────────────────────────────────
+function retakeQuiz() {
+  answers = new Array(QUESTIONS.length).fill(null);
+  currentIndex = 0;
+  rScreen.classList.remove("show");
+  qScreen.classList.remove("hidden");
+  renderQuestion();
+}
+
+// ── Boot ────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
